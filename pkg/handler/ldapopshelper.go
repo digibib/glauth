@@ -121,19 +121,22 @@ func (l LDAPOpsHelper) Bind(h LDAPOpsHandler, bindDN, bindSimplePw string, conn 
 
 	// finally, validate user's pw
 
-	// check app passwords first
+	// check app passwords first, try bcrypt first (optionally hex encoded)
 	if user.PassAppBcrypt != nil {
+		var pass []byte
 		for index, appPw := range user.PassAppBcrypt {
-			decoded, err := hex.DecodeString(appPw)
+			pass, err = hex.DecodeString(appPw)
 			if err != nil {
-				h.GetLog().V(6).Info("invalid app credentials", "incorrect stored hash", "(omitted)")
-			} else {
-				if bcrypt.CompareHashAndPassword(decoded, []byte(untouchedBindSimplePw)) == nil {
-					stats.Frontend.Add("bind_successes", 1)
-					h.GetLog().V(6).Info("Bind success using app pw", "index", index, "binddn", bindDN, "src", conn.RemoteAddr())
-					return ldap.LDAPResultSuccess, nil
-				}
+				h.GetLog().V(6).Info("hex decode failed", "trying bcrypt directly")
+				pass = []byte(user.PassBcrypt)
 			}
+
+			if bcrypt.CompareHashAndPassword(pass, []byte(untouchedBindSimplePw)) == nil {
+				stats.Frontend.Add("bind_successes", 1)
+				h.GetLog().V(6).Info("Bind success using app pw", "index", index, "binddn", bindDN, "src", conn.RemoteAddr())
+				return ldap.LDAPResultSuccess, nil
+			}
+
 		}
 	}
 	if user.PassAppSHA256 != nil {
@@ -156,14 +159,15 @@ func (l LDAPOpsHelper) Bind(h LDAPOpsHandler, bindDN, bindSimplePw string, conn 
 		return ldap.LDAPResultInvalidCredentials, nil
 	}
 
-	// Now, check the pasword hash
+	// Now, check the password hash, try bcrypt first (optionally hex encoded)
 	if user.PassBcrypt != "" {
-		decoded, err := hex.DecodeString(user.PassBcrypt)
+		var pass []byte
+		pass, err := hex.DecodeString(user.PassBcrypt)
 		if err != nil {
-			h.GetLog().V(2).Info("invalid credentials", "incorrect stored hash", "(omitted)")
-			return ldap.LDAPResultInvalidCredentials, nil
+			h.GetLog().V(6).Info("hex decode failed", "trying bcrypt directly")
+			pass = []byte(user.PassBcrypt)
 		}
-		if bcrypt.CompareHashAndPassword(decoded, []byte(bindSimplePw)) != nil {
+		if bcrypt.CompareHashAndPassword(pass, []byte(bindSimplePw)) != nil {
 			h.GetLog().V(2).Info("invalid credentials", "binddn", bindDN, "src", conn.RemoteAddr())
 			l.maybePutInTimeout(h, conn, true)
 			return ldap.LDAPResultInvalidCredentials, nil
