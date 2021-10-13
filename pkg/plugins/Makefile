@@ -7,7 +7,7 @@
 PLUGIN_OS ?= linux
 PLUGIN_ARCH ?= amd64
 
-plugins: plugin_mysql plugin_postgres plugin_sqlite
+plugins: plugin_mysql plugin_postgres plugin_sqlite plugin_kohamysql
 
 plugin_mysql: bin/mysql.so
 
@@ -22,4 +22,9 @@ bin/postgres.so: pkg/plugins/postgres.go pkg/plugins/basesqlhandler.go
 plugin_sqlite: bin/sqlite.so
 
 bin/sqlite.so: pkg/plugins/sqlite.go pkg/plugins/basesqlhandler.go
+	GOOS=$(PLUGIN_OS) GOARCH=$(PLUGIN_ARCH) go build ${TRIM_FLAGS} -ldflags "${BUILD_VARS}" -buildmode=plugin -o $@ $^
+
+plugin_kohamysql: bin/kohamysql.so
+
+bin/kohamysql.so: pkg/plugins/kohamysql.go pkg/plugins/basesqlhandler.go
 	GOOS=$(PLUGIN_OS) GOARCH=$(PLUGIN_ARCH) go build ${TRIM_FLAGS} -ldflags "${BUILD_VARS}" -buildmode=plugin -o $@ $^
