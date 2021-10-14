@@ -25,7 +25,14 @@ func (b KohaMysqlBackend) GetDriverName() string {
 // Lookup user by cardnumber
 func (b KohaMysqlBackend) FindUserQuery(criterion string) string {
   // uidnumber, primarygroup, passbcrypt, passsha256, otpsecret, yubikey
-  return fmt.Sprintf("SELECT borrowernumber,6001,password,'','','' FROM borrowers WHERE password IS NOT NULL AND lower(cardnumber)=?")
+  return fmt.Sprintf(`SELECT borrowernumber,
+    CASE categorycode
+      WHEN 'api' THEN 6000
+      WHEN 'sso' THEN 6000
+      WHEN 'V' THEN 6001
+      ELSE 6002
+      END AS primarygroup,
+    password,'','','' FROM borrowers WHERE password IS NOT NULL AND lower(userid)=?`)
 }
 
 func (b KohaMysqlBackend) FindGroupQuery() string {
@@ -39,12 +46,20 @@ func (b KohaMysqlBackend) FindGroupQuery() string {
 // Fetch all members, used in Sync
 func (b KohaMysqlBackend) FindPosixAccountsQuery() string {
   // name, uidnumber, primarygroup, passbcrypt, passsha256, otpsecret, yubikey, othergroups, givenname, sn, mail, loginshell, homedirectory, disabled
-  return `SELECT cardnumber,borrowernumber,6001,'','','','','',
+  return `SELECT cardnumber,borrowernumber,
+  CASE categorycode
+      WHEN 'api' THEN 6000
+      WHEN 'sso' THEN 6000
+      WHEN 'V' THEN 6001
+      ELSE 6002
+  END AS primarygroup,
+  '','','','','',
     IFNULL(firstname,''),IFNULL(surname,''),IFNULL(alertemail,''),'','',0
     FROM borrowers
     WHERE deleted_at IS NULL
     AND categorycode = 'V'
-    AND password IS NOT NULL`
+    AND password IS NOT NULL
+    AND cardnumber IS NOT NULL`
 }
 
 // Fetch all groups
@@ -60,15 +75,33 @@ func (b KohaMysqlBackend) MemoizeGroupsQuery() string {
 // Fetch User by cardnumber
 func (b KohaMysqlBackend) GetGroupMembersQuery() string {
   //  name, uidnumber, primarygroup, passbcrypt, passsha256, otpsecret, yubikey, othergroups
-  return "SELECT cardnumber,borrowernumber,6001,password,'','','','' FROM borrowers WHERE password IS NOT NULL AND lower(cardnumber)=?"
+  return `SELECT cardnumber,borrowernumber,
+  CASE categorycode
+      WHEN 'api' THEN 6000
+      WHEN 'sso' THEN 6000
+      WHEN 'V' THEN 6001
+      ELSE 6002
+  END AS primarygroup,
+  password,'','','','' FROM borrowers
+  WHERE password IS NOT NULL
+  AND cardnumber IS NOT NULL
+  AND lower(userid)=?`
 }
 
 // Fetch all user IDs, basically a short version of FindPosixAccountsQuery
 func (b KohaMysqlBackend) GetGroupMemberIDsQuery() string {
   // name, uidnumber, primarygroup, passbcrypt, passsha256, otpsecret, yubikey, othergroups
-  return `SELECT cardnumber,borrowernumber,6001,'','','','',''
+  return `SELECT cardnumber,borrowernumber,
+  CASE categorycode
+      WHEN 'api' THEN 6000
+      WHEN 'sso' THEN 6000
+      WHEN 'V' THEN 6001
+      ELSE 6002
+  END AS primarygroup,
+  '','','','',''
   FROM borrowers
   WHERE deleted_at IS NULL
+  AND cardnumber IS NOT NULL
   AND categorycode = 'V'
   AND password IS NOT NULL`
 }
@@ -77,7 +110,14 @@ func (b KohaMysqlBackend) GetGroupMemberIDsQuery() string {
 // TODO: make some decisions on proper access levels
 func (b KohaMysqlBackend) GetUserCapabilitiesQuery() string {
   // action,object
-  return "SELECT * FROM ( VALUES ('search','ou=borrowers,dc=obib,dc=no'),('search','*') ) t WHERE ?"
+  // return "SELECT * FROM ( VALUES ('search','ou=borrowers,dc=obib,dc=no'),('search','*') ) t WHERE ?"
+  return `SELECT 'search' AS action,
+    CASE categorycode
+      WHEN 'API' THEN '*'
+      WHEN 'SSO' THEN 'ou=borrowers,dc=obib,dc=no'
+      ELSE 'ou=nobody,dc=obib,dc=no'
+    END AS object
+    FROM borrowers WHERE borrowernumber = ?`
 }
 
 // Create db/schema if necessary
