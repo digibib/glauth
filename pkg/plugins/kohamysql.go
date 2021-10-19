@@ -110,12 +110,12 @@ func (b KohaMysqlBackend) GetGroupMemberIDsQuery() string {
 // TODO: make some decisions on proper access levels
 func (b KohaMysqlBackend) GetUserCapabilitiesQuery() string {
   // action,object
-  // return "SELECT * FROM ( VALUES ('search','ou=borrowers,dc=obib,dc=no'),('search','*') ) t WHERE ?"
+  // return "SELECT * FROM ( VALUES ('search','ou=borrowers,dc=deichman,dc=no'),('search','*') ) t WHERE ?"
   return `SELECT 'search' AS action,
     CASE categorycode
       WHEN 'API' THEN '*'
-      WHEN 'SSO' THEN 'ou=borrowers,dc=obib,dc=no'
-      ELSE 'ou=nobody,dc=obib,dc=no'
+      WHEN 'SSO' THEN 'ou=borrowers,dc=deichman,dc=no'
+      ELSE 'ou=nobody,dc=deichman,dc=no'
     END AS object
     FROM borrowers WHERE borrowernumber = ?`
 }
