@@ -18,14 +18,12 @@ echo "";
 # Output version string to logs
 /app/glauth --version
 
+# Expand config with vars from env for Docker ease
 echo "";
 echo "Expanding config with env vars";
 echo "";
 
-sed -i "s/__KOHA_ADMINUSER__/$KOHA_ADMINUSER/g" /app/config/config.cfg
-sed -i "s/__KOHA_ADMINPASS__/$KOHA_ADMINPASS/g" /app/config/config.cfg
-sed -i "s/__KOHA_DBHOST__/$KOHA_DBHOST/g" /app/config/config.cfg
-sed -i "s/__KOHA_DBPORT__/$KOHA_DBPORT/g" /app/config/config.cfg
+awk '{while(match($0,"[$]{[^}]*}")) {var=substr($0,RSTART+2,RLENGTH -3);gsub("[$]{"var"}",ENVIRON[var])}}1' < /app/config/config.cfg > /app/config-env.cfg
 
 echo "";
 echo "Starting GLauth now.";
@@ -33,7 +31,7 @@ echo "";
 
 # Run app
 cd /app
-/app/glauth -c /app/config/config.cfg
+/app/glauth -c /app/config-env.cfg
 
 echo ""
 echo "GLauth has exited."
