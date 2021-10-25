@@ -32,7 +32,7 @@ func (b KohaMysqlBackend) FindUserQuery(criterion string) string {
       WHEN 'V' THEN 6001
       ELSE 6002
       END AS primarygroup,
-    password,'','','' FROM borrowers WHERE password IS NOT NULL AND lower(userid)=?`)
+    pin,'','','' FROM borrowers WHERE pin IS NOT NULL AND lower(userid)=?`)
 }
 
 func (b KohaMysqlBackend) FindGroupQuery() string {
@@ -58,7 +58,7 @@ func (b KohaMysqlBackend) FindPosixAccountsQuery() string {
     FROM borrowers
     WHERE deleted_at IS NULL
     AND categorycode = 'V'
-    AND password IS NOT NULL
+    AND pin IS NOT NULL
     AND cardnumber IS NOT NULL`
 }
 
@@ -82,8 +82,8 @@ func (b KohaMysqlBackend) GetGroupMembersQuery() string {
       WHEN 'V' THEN 6001
       ELSE 6002
   END AS primarygroup,
-  password,'','','','' FROM borrowers
-  WHERE password IS NOT NULL
+  pin,'','','','' FROM borrowers
+  WHERE pin IS NOT NULL
   AND cardnumber IS NOT NULL
   AND lower(userid)=?`
 }
@@ -103,7 +103,7 @@ func (b KohaMysqlBackend) GetGroupMemberIDsQuery() string {
   WHERE deleted_at IS NULL
   AND cardnumber IS NOT NULL
   AND categorycode = 'V'
-  AND password IS NOT NULL`
+  AND pin IS NOT NULL`
 }
 
 // Get capabilities of user
@@ -132,7 +132,7 @@ func (b KohaMysqlBackend) CreateSchema(db *sql.DB) {
   dateofbirth date default NULL,
   branchcode varchar(10) NOT NULL default '',
   categorycode varchar(10) NOT NULL default '',
-  password varchar(60) default NULL,
+  pin varchar(60) default NULL,
   smsalertnumber varchar(50) default NULL,
   deleted_at datetime DEFAULT NULL,
 
