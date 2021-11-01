@@ -27,9 +27,11 @@ func (b KohaMysqlBackend) FindUserQuery(criterion string) string {
   // uidnumber, primarygroup, passbcrypt, passsha256, otpsecret, yubikey
   return fmt.Sprintf(`SELECT borrowernumber,
     CASE categorycode
-      WHEN 'api' THEN 6000
-      WHEN 'sso' THEN 6000
+      WHEN 'API' THEN 6000
+      WHEN 'SSO' THEN 6000
+      WHEN 'ANS' THEN 6001
       WHEN 'V' THEN 6001
+      WHEN 'B' THEN 6001
       ELSE 6002
       END AS primarygroup,
     pin,'','','' FROM borrowers WHERE pin IS NOT NULL AND lower(userid)=?`)
@@ -48,16 +50,18 @@ func (b KohaMysqlBackend) FindPosixAccountsQuery() string {
   // name, uidnumber, primarygroup, passbcrypt, passsha256, otpsecret, yubikey, othergroups, givenname, sn, mail, loginshell, homedirectory, disabled
   return `SELECT cardnumber,borrowernumber,
   CASE categorycode
-      WHEN 'api' THEN 6000
-      WHEN 'sso' THEN 6000
+      WHEN 'API' THEN 6000
+      WHEN 'SSO' THEN 6000
+      WHEN 'ANS' THEN 6001
       WHEN 'V' THEN 6001
+      WHEN 'B' THEN 6001
       ELSE 6002
   END AS primarygroup,
   '','','','','',
     IFNULL(firstname,''),IFNULL(surname,''),IFNULL(alertemail,''),'','',0
     FROM borrowers
     WHERE deleted_at IS NULL
-    AND categorycode = 'V'
+    AND categorycode IN ('API','SSO','ANS','V','B')
     AND pin IS NOT NULL
     AND cardnumber IS NOT NULL`
 }
@@ -77,9 +81,11 @@ func (b KohaMysqlBackend) GetGroupMembersQuery() string {
   //  name, uidnumber, primarygroup, passbcrypt, passsha256, otpsecret, yubikey, othergroups
   return `SELECT cardnumber,borrowernumber,
   CASE categorycode
-      WHEN 'api' THEN 6000
-      WHEN 'sso' THEN 6000
+      WHEN 'API' THEN 6000
+      WHEN 'SSO' THEN 6000
+      WHEN 'ANS' THEN 6001
       WHEN 'V' THEN 6001
+      WHEN 'B' THEN 6001
       ELSE 6002
   END AS primarygroup,
   pin,'','','','' FROM borrowers
@@ -93,16 +99,18 @@ func (b KohaMysqlBackend) GetGroupMemberIDsQuery() string {
   // name, uidnumber, primarygroup, passbcrypt, passsha256, otpsecret, yubikey, othergroups
   return `SELECT cardnumber,borrowernumber,
   CASE categorycode
-      WHEN 'api' THEN 6000
-      WHEN 'sso' THEN 6000
+      WHEN 'API' THEN 6000
+      WHEN 'SSO' THEN 6000
+      WHEN 'ANS' THEN 6001
       WHEN 'V' THEN 6001
+      WHEN 'B' THEN 6001
       ELSE 6002
   END AS primarygroup,
   '','','','',''
   FROM borrowers
   WHERE deleted_at IS NULL
   AND cardnumber IS NOT NULL
-  AND categorycode = 'V'
+  AND categorycode IN ('API','SSO','ANS','V','B')
   AND pin IS NOT NULL`
 }
 
